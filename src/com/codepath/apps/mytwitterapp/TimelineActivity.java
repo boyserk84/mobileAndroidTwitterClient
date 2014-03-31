@@ -24,6 +24,8 @@ import com.loopj.android.http.RequestParams;
 /**
  * TimelineActivity 
  * 
+ * Show timeline and tweets of the current session user
+ * 
  * @author nkemavaha
  *
  */
@@ -45,6 +47,10 @@ public class TimelineActivity extends Activity {
 	
 	private TweetsAdapter tweetsAdapter;
 	
+	///////////////////////
+	/// Data fields
+	//////////////////////
+	
 	/**
 	 * List of TweetObject retrieved for Twitter API requests
 	 */
@@ -60,6 +66,12 @@ public class TimelineActivity extends Activity {
 	 */
 	private User currentSessionUser;
 
+	/**
+	 * Flag to indicate whether first chunk of tweets data has been successfully loaded
+	 * before we can load more.
+	 */
+	private boolean isFirstDataLoaded = false;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -69,12 +81,6 @@ public class TimelineActivity extends Activity {
 		// Fetch initial tweets data
 		requestTweets( INITIAL_TWEETS_TO_LOAD, lastTweetId);
 	}
-	
-	/**
-	 * Flag to indicate whether first chunk of tweets data has been successfully loaded
-	 * before we can load more.
-	 */
-	private boolean isFirstDataLoaded = false;
 	
 	/**
 	 * Helper function to request a current session User information from Twitter API.
