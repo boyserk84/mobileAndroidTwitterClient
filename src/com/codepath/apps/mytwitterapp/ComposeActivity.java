@@ -2,6 +2,7 @@ package com.codepath.apps.mytwitterapp;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -22,26 +23,40 @@ import com.codepath.apps.mytwitterapp.models.User;
  */
 public class ComposeActivity extends Activity {
 
-	EditText etNewMessage;
+	private static final int TOTAL_STRING_LENGTH = 140;
 	
-	TextView tvScreenName;
+	/////////////////////////////
+	///		UI elements
+	/////////////////////////////
 	
-	TextView tvFullName;
+	private EditText etNewMessage;
+	
+	private TextView tvScreenName;
+	
+	private TextView tvFullName;
+	
+	private TextView tvShowTextLimit;
 	
 	User tweetUserData;
+	
+	private int remainingChar;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_compose);
+		remainingChar = TOTAL_STRING_LENGTH;
+		
 		setupViews();
+		setupTextChangedListener();
+		
 		
 		// Retrieve data from previous activity
 		//Intent i = getIntent();
 		//tweetUserData = (User) i.getSerializableExtra("userData");
 		
-		//tvScreenName.setText( tweetUserData.getScreenName() );
-		//tvFullName.setText( tweetUserData.getName() );
+		tvScreenName.setText( "@BlabhBlah" );//tweetUserData.getScreenName() );
+		tvFullName.setText("Blah Blah" );
 		
 		
 	}
@@ -51,26 +66,39 @@ public class ComposeActivity extends Activity {
 		tvScreenName = (TextView) findViewById( R.id.tvTwitterTag );
 		tvFullName = (TextView) findViewById( R.id.tvTwitterName );
 		etNewMessage = (EditText) findViewById( R.id.etTwitterMessage );	
+		tvShowTextLimit = (TextView) findViewById( R.id.tvCharsLeft );
+	}
+	
+	/** Setup text changed listener for keeping track of remaining available characters. */
+	private void setupTextChangedListener() {
+		tvShowTextLimit.setText( Integer.toString( TOTAL_STRING_LENGTH ) );
 		
+		// Setup listener for text changes so we can keep track of remaining characters space
 		etNewMessage.addTextChangedListener( new TextWatcher() {
 			
 			@Override
 			public void onTextChanged(CharSequence s, int start, int before, int count) {
-				// TODO Auto-generated method stub
+				remainingChar = TOTAL_STRING_LENGTH - etNewMessage.getText().length();
+				
+				// Show remaining text
+				if ( remainingChar >= 0 ) {
+					// Show regular remaining text
+					tvShowTextLimit.setText( Integer.toString( remainingChar ) );
+					tvShowTextLimit.setTextColor( Color.BLACK );
+				} else {
+					// Show a warning of exceeding characters limit 
+					tvShowTextLimit.setText( "Exceed chararacters limit by " + Integer.toString( remainingChar * -1) );
+					tvShowTextLimit.setTextColor( Color.RED );
+				}
 				
 			}
 			
 			@Override
-			public void beforeTextChanged(CharSequence s, int start, int count,
-					int after) {		
-			}
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
 			
 			@Override
-			public void afterTextChanged(Editable s) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
+			public void afterTextChanged(Editable s) {}
+		});	
 	}
 
 	@Override
@@ -94,7 +122,14 @@ public class ComposeActivity extends Activity {
 				Intent i = new Intent();
 				String message = etNewMessage.getText().toString();
 				i.putExtra("twitterMessage", message);
-				setResult( RESULT_OK, i);
+				
+				// Checking if user's message conforms to characters limit rule.
+				if ( remainingChar >= 0 ) {
+					setResult( RESULT_OK, i);
+				} else {
+					// sending failed result code
+					setResult( -99, i );
+				}
 				this.finish();
 		}
 		return result;

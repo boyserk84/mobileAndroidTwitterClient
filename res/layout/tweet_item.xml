@@ -34,9 +34,8 @@
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/tvName"
         android:layout_below="@+id/tvName"  
-        android:lines="2"
         android:text="Tweetssss"
-        android:textSize="10sp" />
+        android:textSize="12sp" />
      
      <TextView
         android:id="@+id/tvTimeStamp"
@@ -46,7 +45,7 @@
         android:layout_below="@+id/tvBody"  
         android:lines="1"
         android:text="Time"
-        android:textSize="6sp" />
+        android:textSize="12sp" />
 
 
 </RelativeLayout>

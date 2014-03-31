@@ -31,15 +31,6 @@
            android:layout_toRightOf="@+id/ivProfileImage"
            android:textSize="12sp" />
 
-       <TextView
-           android:id="@+id/tvCharsLeft"
-           android:layout_width="wrap_content"
-           android:layout_height="wrap_content"
-           android:layout_below="@+id/tvTwitterName"
-           android:layout_marginLeft="5dp"
-           android:layout_toRightOf="@+id/ivProfileImage"
-           android:textSize="12sp" />
-
        <!--
            1.) Align this text as tvName
            2.) Below tvName		-->
@@ -52,6 +43,23 @@
            android:layout_below="@+id/tvTwitterName"
            android:lines="2"
            android:textSize="12sp" />
+       
+       <RelativeLayout
+            android:id="@+id/rvLayout2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="5dp"
+            android:layout_below="@+id/tvTwitterTag" >
+
+            <TextView
+                android:id="@+id/tvCharsLeft"
+                android:layout_width="wrap_content"
+                android:layout_alignParentRight="true"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="10dp"
+                android:textSize="12sp" />
+        </RelativeLayout>
+       
    </RelativeLayout>
     
     <EditText

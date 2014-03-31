@@ -135,6 +135,10 @@ public class TimelineActivity extends Activity {
 		
 	}
 	
+	/**
+	 * Helper function to display a toast message
+	 * @param msg		Message to display
+	 */
 	private void notifyOnToast(String msg) {
 		Toast.makeText( this, msg, Toast.LENGTH_SHORT).show();	
 	}
@@ -147,7 +151,7 @@ public class TimelineActivity extends Activity {
 			@Override
 			public void onLoadMore(int page, int totalItemsCount) {
 				// TODO Auto-generated method stub
-				Log.d("DEBUG","loading more " + page);
+				Log.d("DEBUG","loading more " + page + ": Total Items Count:" + totalItemsCount);
 				requestTweets( 5 , lastTweetId);
 			}
 		});
@@ -214,7 +218,12 @@ public class TimelineActivity extends Activity {
 					};
 					
 					MyTwitterApp.getRestClient().postStatusUpdate(handler, message);
+				} else {
+					notifyOnToast("Your message is blank!");	
 				}
+				// handle failed message
+			} else if ( resultCode == -99 ){
+				notifyOnToast("Your message characters exceeds limit!");
 			}
 		}
 		
