@@ -65,7 +65,7 @@ public class MyTwitterClient extends OAuthBaseClient {
     public void getHomeTimeline(AsyncHttpResponseHandler handler, RequestParams params) {
     	String url = getApiUrl("/statuses/home_timeline.json");
     	Log.d("DEBUG", "Request TweetHomeTimeLine");
-    	if ( count < 5 ) {
+    	if ( count < 10 ) {
     		client.get( url , params, handler);
     		count++;
     	} else {

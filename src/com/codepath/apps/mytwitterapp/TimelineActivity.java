@@ -58,6 +58,8 @@ public class TimelineActivity extends Activity {
 		requestTweets( 25, lastTweetId);
 	}
 	
+	private boolean isFirstDataLoaded = false;
+	
 	/**
 	 * Request tweets data from Twitter API
 	 * @param count			Number of tweets we'd like to retrieved
@@ -74,6 +76,7 @@ public class TimelineActivity extends Activity {
 					// First time
 					tweetsAdapter = new TweetsAdapter( getBaseContext(), tweets);
 					lvTweets.setAdapter( tweetsAdapter );
+					isFirstDataLoaded = true;
 					Log.d("DEBUG", "============ init first time data");
 				} else {
 					
@@ -103,6 +106,7 @@ public class TimelineActivity extends Activity {
 						tweetsAdapter.addAll( tweets );
 						tweetsAdapter.notifyDataSetChanged();
 					}
+					
 					Log.d("DEBUG", "Update data");
 				}
 				
@@ -146,13 +150,17 @@ public class TimelineActivity extends Activity {
 	/** Setup views */
 	private void setupViews() {
 		lvTweets = (ListView) findViewById( R.id.lvTweets );	
+		
+		// Setup endless scrolling
 		lvTweets.setOnScrollListener( new EndlessScrollListener() {
 			
 			@Override
 			public void onLoadMore(int page, int totalItemsCount) {
-				// TODO Auto-generated method stub
-				Log.d("DEBUG","loading more " + page + ": Total Items Count:" + totalItemsCount);
-				requestTweets( 5 , lastTweetId);
+				
+				if ( isFirstDataLoaded == true ) {
+					Log.d("DEBUG","loading more " + page + ": Total Items Count:" + totalItemsCount);
+					requestTweets( 5 , lastTweetId);
+				}
 			}
 		});
 	}

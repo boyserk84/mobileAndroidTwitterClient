@@ -16,7 +16,7 @@ public abstract class EndlessScrollListener implements OnScrollListener {
 	 // The minimum amount of items to have below your current scroll position
     // before loading more.
 	// NOTE: this thing is crazy. This actually makes it work or break!!!!! Tweak at your own risk!!!
-    private int visibleThreshold = 25;
+    private int visibleThreshold = 5;
     
     // The current offset index of data you have loaded
     private int currentPage = 0;
