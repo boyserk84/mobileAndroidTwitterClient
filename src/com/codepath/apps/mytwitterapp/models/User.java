@@ -1,5 +1,7 @@
 package com.codepath.apps.mytwitterapp.models;
 
+import java.io.Serializable;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -9,7 +11,9 @@ import org.json.JSONObject;
  * @author nkemavaha
  *
  */
-public class User {
+public class User implements Serializable{
+	private static final long serialVersionUID = 8458607192036128626L;
+	
 	private String name;
 	private long uid;
 	private String screenName;
@@ -18,6 +22,8 @@ public class User {
 	private int numTweets;
 	private int followersCount;
 	private int friendsCount;
+	
+	public User () {}
 	
     public String getName() {
         return name;

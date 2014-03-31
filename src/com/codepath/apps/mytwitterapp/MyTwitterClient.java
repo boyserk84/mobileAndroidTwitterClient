@@ -74,6 +74,15 @@ public class MyTwitterClient extends OAuthBaseClient {
     }
     
     /**
+     * Gets a current session user's verified credentials (i.e. this will fetch basic account info as well)
+     * @param handler	callback when response is received
+     */
+    public void getCurrentUserVerifiedCredentials(AsyncHttpResponseHandler handler) {
+    	String url = getApiUrl("/account/verify_credentials.json");
+    	client.get( url , null, handler);
+    }
+    
+    /**
      * Post an update to tweet (post a new tweet)
      * @param handler		Callback when response is received.
      * @param message		Updated/Tweet message

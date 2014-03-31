@@ -9,9 +9,11 @@ import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.codepath.apps.mytwitterapp.models.User;
+import com.nostra13.universalimageloader.core.ImageLoader;
 
 /**
  * Compose Activity Class
@@ -37,9 +39,18 @@ public class ComposeActivity extends Activity {
 	
 	private TextView tvShowTextLimit;
 	
+	private ImageView ivProfileImage;
+	
+	////////////////////////////
+	/// Data fields
+	///////////////////////////
+	
+	/** Current user who will be posting a tweet. */
 	User tweetUserData;
 	
+	/** Keep track of characters limit */
 	private int remainingChar;
+	
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -52,11 +63,15 @@ public class ComposeActivity extends Activity {
 		
 		
 		// Retrieve data from previous activity
-		//Intent i = getIntent();
-		//tweetUserData = (User) i.getSerializableExtra("userData");
+		Intent i = getIntent();
+		tweetUserData = (User) i.getSerializableExtra("userData");
 		
-		tvScreenName.setText( "@BlabhBlah" );//tweetUserData.getScreenName() );
-		tvFullName.setText("Blah Blah" );
+		// Populate data
+		tvScreenName.setText( "@" + tweetUserData.getScreenName()  );
+		tvFullName.setText( tweetUserData.getName() );
+		
+		// Load image
+		ImageLoader.getInstance().displayImage(tweetUserData.getProfileImage(), ivProfileImage);
 		
 		
 	}
@@ -67,6 +82,7 @@ public class ComposeActivity extends Activity {
 		tvFullName = (TextView) findViewById( R.id.tvTwitterName );
 		etNewMessage = (EditText) findViewById( R.id.etTwitterMessage );	
 		tvShowTextLimit = (TextView) findViewById( R.id.tvCharsLeft );
+		ivProfileImage = (ImageView) findViewById( R.id.ivProfileImage );
 	}
 	
 	/** Setup text changed listener for keeping track of remaining available characters. */
@@ -128,7 +144,7 @@ public class ComposeActivity extends Activity {
 					setResult( RESULT_OK, i);
 				} else {
 					// sending failed result code
-					setResult( -99, i );
+					setResult( TimelineActivity.COMPOSE_REQUEST_FAIL, i );
 				}
 				this.finish();
 		}

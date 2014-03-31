@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import com.codepath.apps.adapters.TweetsAdapter;
 import com.codepath.apps.mytwitterapp.models.Tweet;
+import com.codepath.apps.mytwitterapp.models.User;
 import com.codepath.apps.views.EndlessScrollListener;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
@@ -27,7 +28,14 @@ import com.loopj.android.http.RequestParams;
  *
  */
 public class TimelineActivity extends Activity {
-	private static final int COMPOSE_REQUEST = 101;
+	
+	public static final int COMPOSE_REQUEST_CODE = 101;
+	public static final int COMPOSE_REQUEST_FAIL = -99;
+	
+	public static final String USER_DATA_KEY = "userData";
+	
+	public static final int INITIAL_TWEETS_TO_LOAD = 25;
+	public static final int TWEETS_TO_LOAD_WHEN_SCROLL = 10;
 	
 	////////////////////////
 	/// Views
@@ -46,19 +54,49 @@ public class TimelineActivity extends Activity {
 	 * Keep track of last tweet Id -- using for request more tweets since tweetTd:XXXXXX
 	 */
 	private long lastTweetId = -1;
+	
+	/**
+	 * Current session user on this app
+	 */
+	private User currentSessionUser;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_timeline);
 		setupViews();
-
-		Log.d("DEBUG", "TimeLineActivity --- onCreated");
+		
 		// Fetch initial tweets data
-		requestTweets( 25, lastTweetId);
+		requestTweets( INITIAL_TWEETS_TO_LOAD, lastTweetId);
 	}
 	
+	/**
+	 * Flag to indicate whether first chunk of tweets data has been successfully loaded
+	 * before we can load more.
+	 */
 	private boolean isFirstDataLoaded = false;
+	
+	/**
+	 * Helper function to request a current session User information from Twitter API.
+	 */
+	private void setupCurrentSessionUserInfo() {
+		if ( currentSessionUser == null ) {
+			JsonHttpResponseHandler handler = new JsonHttpResponseHandler() {
+				@Override
+				public void onSuccess(JSONObject jsonObject ) {
+					currentSessionUser = User.fromJson( jsonObject );
+					startActivityForResult( getIntentForComposeActivity() , COMPOSE_REQUEST_CODE);	
+				}
+
+				@Override
+				public void onFailure(Throwable e, JSONObject errorObject) {				
+					showLog( "Failure to get current session user info! " + errorObject.toString() );
+				}	
+			};
+
+			MyTwitterApp.getRestClient().getCurrentUserVerifiedCredentials(handler);
+		}
+	}
 	
 	/**
 	 * Request tweets data from Twitter API
@@ -77,7 +115,6 @@ public class TimelineActivity extends Activity {
 					tweetsAdapter = new TweetsAdapter( getBaseContext(), tweets);
 					lvTweets.setAdapter( tweetsAdapter );
 					isFirstDataLoaded = true;
-					Log.d("DEBUG", "============ init first time data");
 				} else {
 					
 					// NOTE: Due to "max_id" request, which results in returning ID less than (that is, older than) or equal to the specified ID,
@@ -90,9 +127,8 @@ public class TimelineActivity extends Activity {
 					if ( firstDuplicateTweet != null ) {
 						hasTheSameTweetId = (firstDuplicateTweet.getId() == lastTweetId);
 						if ( hasTheSameTweetId == true) {
-							Log.d("DEBUG"," remove duplicate " + firstDuplicateTweet.getId() + " last Id:" + lastTweetId + " with size " + tweets.size());
+							showLog( "remove duplicate " + firstDuplicateTweet.getId() + " last Id:" + lastTweetId + " with size " + tweets.size() );
 							tweets.remove( 0 );
-							Log.d("DEBUG", "After remove size() is " + tweets.size() );
 						}
 					}
 					
@@ -106,8 +142,6 @@ public class TimelineActivity extends Activity {
 						tweetsAdapter.addAll( tweets );
 						tweetsAdapter.notifyDataSetChanged();
 					}
-					
-					Log.d("DEBUG", "Update data");
 				}
 				
 				// Prevent Index Out Of Bound
@@ -115,12 +149,10 @@ public class TimelineActivity extends Activity {
 					lastTweetId = tweets.get( tweets.size() -1 ).getId();
 				}
 				
-				Log.d("DEBUG", "Getting Last Id on success::" + lastTweetId);
 			}
 
 			@Override
 			public void onFailure(Throwable e, JSONObject errorObject) {				
-				Log.d("DEBUG", "Request Failed due to " + errorObject.toString());
 				notifyOnToast("Error: Rate limit exceeded!");
 			}
 		};
@@ -158,8 +190,8 @@ public class TimelineActivity extends Activity {
 			public void onLoadMore(int page, int totalItemsCount) {
 				
 				if ( isFirstDataLoaded == true ) {
-					Log.d("DEBUG","loading more " + page + ": Total Items Count:" + totalItemsCount);
-					requestTweets( 5 , lastTweetId);
+					showLog( "loading more " + page + ": Total Items Count:" + totalItemsCount);
+					requestTweets( TWEETS_TO_LOAD_WHEN_SCROLL , lastTweetId);
 				}
 			}
 		});
@@ -183,12 +215,7 @@ public class TimelineActivity extends Activity {
 		boolean result = super.onOptionsItemSelected(item);
 		switch ( item.getItemId() ) {
 			case R.id.miCompose:
-				Log.d("DEBUG", "Compose message click!");
-				Intent i = new Intent(getBaseContext(), ComposeActivity.class );
-				
-				// TODO: Find the way to get user data
-				i.putExtra("userData", "test");
-				startActivityForResult( i , COMPOSE_REQUEST);
+				openComposeActivity();
 				result = true;
 				break;
 				
@@ -199,11 +226,36 @@ public class TimelineActivity extends Activity {
 		return result;
 		
 	}
-		
+	
+	/**
+	 * Helper function to handle open a compose activity.
+	 * 
+	 */
+	private void openComposeActivity() {
+		// If currentSessionUser has already been loaded and temporarily stored
+		if ( currentSessionUser != null ) {
+			startActivityForResult( getIntentForComposeActivity() , COMPOSE_REQUEST_CODE);	
+		} else {
+			// Otherwise, send a request for user information first
+			setupCurrentSessionUserInfo();
+		}
+	}
+	
+	/**
+	 * Helper function to get Intent object specifically for ComposeActivity
+	 * @return Intent Object with current session user object.
+	 */
+	private Intent getIntentForComposeActivity() {
+		Intent i = new Intent(getBaseContext(), ComposeActivity.class );
+		i.putExtra( USER_DATA_KEY, currentSessionUser);	
+		return i;
+	}
+	
+	/** Callback when compose activity is returned. */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-		if ( requestCode == COMPOSE_REQUEST ) {
+		if ( requestCode == COMPOSE_REQUEST_CODE ) {
 			if ( resultCode == RESULT_OK ) {
 				String message = data.getStringExtra("twitterMessage");
 				
@@ -216,11 +268,12 @@ public class TimelineActivity extends Activity {
 								// Update view to reflect latest composed message.
 								tweetsAdapter.insert( Tweet.fromJson( update ), 0 );
 								tweetsAdapter.notifyDataSetChanged();
+								notifyOnToast( "Your status has been updated!");
 							}
 							
 							@Override
 							public void onFailure(Throwable e, JSONObject errorObject) {
-								Log.d("DEBUG", "Failed to post " + errorObject.toString() );
+								showLog( "Failed to post " + errorObject.toString() );
 								
 							}
 					};
@@ -230,11 +283,28 @@ public class TimelineActivity extends Activity {
 					notifyOnToast("Your message is blank!");	
 				}
 				// handle failed message
-			} else if ( resultCode == -99 ){
+			} else if ( resultCode == COMPOSE_REQUEST_FAIL ){
 				notifyOnToast("Your message characters exceeds limit!");
 			}
 		}
 		
+	}
+	
+	//////////////////////////////
+	/// Debug Helper functions
+	/////////////////////////////
+
+	/** Flag indicate whether we should show a debug log info. */
+	private boolean isOnProduction = false;
+	
+	/**
+	 * Helper function for showing debug log so that we can toggle on/off
+	 * @param message
+	 */
+	private void showLog( String message ) {
+		if ( isOnProduction == false ) {
+			Log.d("DEBUG", message);
+		}
 	}
 
 }
