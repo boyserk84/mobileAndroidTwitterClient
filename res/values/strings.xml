@@ -9,5 +9,7 @@
     <string name="title_activity_timeline">Twitter Home</string>
     <string name="title_activity_compose">Compose a new Tweet</string>
     <string name="compose">Compose</string>
+    <string name="hellointro">Hello.</string>
+    <string name="bodyintro">Welcome to Nate Twitter App!</string>
 
 </resources>

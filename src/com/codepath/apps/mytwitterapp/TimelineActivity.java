@@ -11,7 +11,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import com.codepath.apps.adapters.TweetsAdapter;
@@ -20,6 +19,9 @@ import com.codepath.apps.mytwitterapp.models.User;
 import com.codepath.apps.views.EndlessScrollListener;
 import com.loopj.android.http.JsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
+
+import eu.erikw.PullToRefreshListView;
+import eu.erikw.PullToRefreshListView.OnRefreshListener;
 
 /**
  * TimelineActivity 
@@ -43,7 +45,7 @@ public class TimelineActivity extends Activity {
 	/// Views
 	///////////////////////
 	
-	private ListView lvTweets; 
+	private PullToRefreshListView lvTweets; 
 	
 	private TweetsAdapter tweetsAdapter;
 	
@@ -155,6 +157,9 @@ public class TimelineActivity extends Activity {
 					lastTweetId = tweets.get( tweets.size() -1 ).getId();
 				}
 				
+				// Signify that refresh has finished
+				lvTweets.onRefreshComplete();
+				
 			}
 
 			@Override
@@ -187,7 +192,7 @@ public class TimelineActivity extends Activity {
 	
 	/** Setup views */
 	private void setupViews() {
-		lvTweets = (ListView) findViewById( R.id.lvTweets );	
+		lvTweets = (PullToRefreshListView ) findViewById( R.id.lvTweets );	
 		
 		// Setup endless scrolling
 		lvTweets.setOnScrollListener( new EndlessScrollListener() {
@@ -199,6 +204,18 @@ public class TimelineActivity extends Activity {
 					showLog( "loading more " + page + ": Total Items Count:" + totalItemsCount);
 					requestTweets( TWEETS_TO_LOAD_WHEN_SCROLL , lastTweetId);
 				}
+			}
+		});
+		
+		// Setup pull-to-refresh
+		lvTweets.setOnRefreshListener(new OnRefreshListener() {
+			@Override
+			public void onRefresh() {
+				// Your code to refresh the list contents
+				// Make sure you call listView.onRefreshComplete()
+				// once the loading is done. This can be done from here or any
+				// place such as when the network request has completed successfully.
+				requestTweets( TWEETS_TO_LOAD_WHEN_SCROLL, lastTweetId);
 			}
 		});
 	}

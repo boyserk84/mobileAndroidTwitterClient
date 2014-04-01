@@ -7,6 +7,11 @@ import android.view.View;
 
 import com.codepath.oauth.OAuthLoginActivity;
 
+/**
+ * Log-in Activity
+ * @author nkemavaha
+ *
+ */
 public class LoginActivity extends OAuthLoginActivity<MyTwitterClient> {
 
 	@Override

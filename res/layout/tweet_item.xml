@@ -15,40 +15,40 @@
         android:scaleType="fitXY"
         android:adjustViewBounds="true"
         android:src="@drawable/ic_launcher" />
-
+    
     <TextView
         android:id="@+id/tvName"
-        android:textStyle="bold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
         android:layout_marginLeft="5dp"
-        android:layout_toRightOf="@+id/ivProfile"        
+        android:layout_toRightOf="@+id/ivProfile"
         android:text="Twitter Name"
-        android:textSize="12sp" />
-    
-    <!--  1.) Align this text as tvName
-          2.) Below tvName		
-     -->
-     <TextView
+        android:textColor="#575757"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+
+
+    <TextView
         android:id="@+id/tvBody"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/tvName"
-        android:layout_below="@+id/tvName"  
+        android:layout_below="@+id/tvName"
         android:text="Tweetssss"
+        android:textColor="#575757"
         android:textSize="12sp" />
-     
-     <TextView
+
+    <TextView
         android:id="@+id/tvTimeStamp"
-        android:textStyle="bold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/tvName"
-        android:layout_below="@+id/tvBody"  
+        android:layout_below="@+id/tvBody"
         android:lines="1"
         android:text="Time"
-        android:textSize="12sp" />
-
+        android:textColor="#575757"
+        android:textSize="12sp"
+        android:textStyle="bold" />
 
 </RelativeLayout>
