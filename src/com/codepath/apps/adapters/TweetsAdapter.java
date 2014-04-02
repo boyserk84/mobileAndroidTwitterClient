@@ -47,15 +47,13 @@ public class TweetsAdapter extends ArrayAdapter<Tweet> {
 		ImageView ivProfile = (ImageView) view.findViewById(R.id.ivProfile);
 		ImageLoader.getInstance().displayImage( tweet.getUser().getProfileImage(), ivProfile );
 		
-		// TODO: Use HTML text so that we click on URL link if any
+		// TODO: 2nd iteration: Use HTML text so that we click on URL link if any
 		
 		TextView tvName = (TextView) view.findViewById( R.id.tvName );
 		tvName.setText( tweet.getUser().getName() );
 		
 		TextView tvBody = (TextView) view.findViewById( R.id.tvBody );
 		tvBody.setText( tweet.getBody() );
-		
-		
 		
 		TextView tvTimeStamp = (TextView) view.findViewById( R.id.tvTimeStamp );
 		tvTimeStamp.setText( tweet.getRelativeTimeStamp( getContext() ) );

@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     tools:context="com.codepath.apps.mytwitterapp.TimelineActivity"
     tools:ignore="MergeRootFrame"
-    android:background="#FFFFFF" >
+    android:background="#000000" >
 
     <eu.erikw.PullToRefreshListView
         android:id="@+id/lvTweets"
