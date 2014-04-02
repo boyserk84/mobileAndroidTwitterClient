@@ -64,13 +64,14 @@ public class MyTwitterClient extends OAuthBaseClient {
      */
     public void getHomeTimeline(AsyncHttpResponseHandler handler, RequestParams params) {
     	String url = getApiUrl("/statuses/home_timeline.json");
-    	Log.d("DEBUG", "Request TweetHomeTimeLine");
-    	if ( count < 10 ) {
-    		client.get( url , params, handler);
-    		count++;
-    	} else {
+    	
+    	if ( count > 10 ) {
     		Log.d("DEBUG", "Exceed limit of " + count);
     	}
+    	
+    	client.get( url , params, handler);
+    	count++;
+
     }
     
     /**
@@ -89,7 +90,6 @@ public class MyTwitterClient extends OAuthBaseClient {
      */
     public void postStatusUpdate(AsyncHttpResponseHandler handler, String message) {
     	String url = getApiUrl("/statuses/update.json");
-    	Log.d("DEBUG", "post a new tweet.");
     	RequestParams params = new RequestParams("status", message);
     	client.post( url, params, handler);
     }

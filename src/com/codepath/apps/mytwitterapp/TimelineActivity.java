@@ -6,7 +6,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -112,6 +115,16 @@ public class TimelineActivity extends Activity {
 	 * @param lastId		Which tweet Id (aka index) we fetch data from 
 	 */
 	private void requestTweets(int count, long lastId) {
+		
+		// Check if there is any internet connection, before sending request
+		if ( isNetworkAvailable() == false ) {
+			notifyOnToast("Error: No Internet Connection");
+			// Signify that refresh has finished
+			lvTweets.onRefreshComplete();
+			return;
+		}
+		
+		
 		// Setup handle Rest Client response
 		JsonHttpResponseHandler handler = new JsonHttpResponseHandler() {
 			@Override
@@ -259,6 +272,13 @@ public class TimelineActivity extends Activity {
 		if ( currentSessionUser != null ) {
 			startActivityForResult( getIntentForComposeActivity() , COMPOSE_REQUEST_CODE);	
 		} else {
+			
+			// Check if there is any internet connection, before sending request
+			if ( isNetworkAvailable() == false ) {
+				notifyOnToast("Error: No Internet Connection");
+				return;
+			}
+			
 			// Otherwise, send a request for user information first
 			setupCurrentSessionUserInfo();
 		}
@@ -277,7 +297,12 @@ public class TimelineActivity extends Activity {
 	/** Callback when compose activity is returned. */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-
+		// Check if there is any internet connection, before sending request
+		if ( isNetworkAvailable() == false ) {
+			notifyOnToast("Error: No Internet Connection");
+			return;
+		}
+		
 		if ( requestCode == COMPOSE_REQUEST_CODE ) {
 			if ( resultCode == RESULT_OK ) {
 				String message = data.getStringExtra("twitterMessage");
@@ -329,5 +354,17 @@ public class TimelineActivity extends Activity {
 			Log.d("DEBUG", message);
 		}
 	}
+	
+    /**
+     * Helper function to help detect if there is internet available
+     * Reference & credits: http://stackoverflow.com/questions/4238921/android-detect-whether-there-is-an-internet-connection-available
+     * 
+     * @return
+     */
+    public boolean isNetworkAvailable() {
+        ConnectivityManager connectivityManager  = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetworkInfo != null && activeNetworkInfo.isConnected();
+    }
 
 }
