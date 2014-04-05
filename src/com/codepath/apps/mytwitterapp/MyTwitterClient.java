@@ -74,6 +74,11 @@ public class MyTwitterClient extends OAuthBaseClient {
 
     }
     
+    public void getMentionsTimeline(AsyncHttpResponseHandler handler, RequestParams params) {
+    	String url = getApiUrl("/statuses/mentions_timeline.json");
+    	client.get( url , params, handler);
+    }
+    
     /**
      * Gets a current session user's verified credentials (i.e. this will fetch basic account info as well)
      * @param handler	callback when response is received

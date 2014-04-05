@@ -1,40 +1,45 @@
 package com.codepath.apps.mytwitterapp;
 
-import java.util.ArrayList;
-
-import org.json.JSONArray;
 import org.json.JSONObject;
 
-import android.app.Activity;
+import android.app.ActionBar;
+import android.app.ActionBar.Tab;
+import android.app.ActionBar.TabListener;
+import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.codepath.apps.adapters.TweetsAdapter;
+import com.codepath.apps.fragments.HomeTimelineFragment;
+import com.codepath.apps.fragments.MentionsFragment;
+import com.codepath.apps.interfaces.ResultDataAPIListener;
 import com.codepath.apps.mytwitterapp.models.Tweet;
 import com.codepath.apps.mytwitterapp.models.User;
-import com.codepath.apps.views.EndlessScrollListener;
 import com.loopj.android.http.JsonHttpResponseHandler;
-import com.loopj.android.http.RequestParams;
-
-import eu.erikw.PullToRefreshListView;
-import eu.erikw.PullToRefreshListView.OnRefreshListener;
 
 /**
  * TimelineActivity 
  * 
  * Show timeline and tweets of the current session user
  * 
+ * TODO:
+ * 	- Issue with switching between tabs
+ *  - Issue with Mention Fragment load more than needed
+ * 
+ * 
  * @author nkemavaha
  *
  */
-public class TimelineActivity extends Activity {
+public class TimelineActivity extends FragmentActivity implements TabListener, ResultDataAPIListener {
 	
 	public static final int COMPOSE_REQUEST_CODE = 101;
 	public static final int COMPOSE_REQUEST_FAIL = -99;
@@ -42,51 +47,60 @@ public class TimelineActivity extends Activity {
 	public static final String USER_DATA_KEY = "userData";
 	
 	public static final int INITIAL_TWEETS_TO_LOAD = 25;
-	public static final int TWEETS_TO_LOAD_WHEN_SCROLL = 10;
 	
-	////////////////////////
-	/// Views
-	///////////////////////
 	
-	private PullToRefreshListView lvTweets; 
+	//////////////////////
+	// Fragments
+	//////////////////////
 	
-	private TweetsAdapter tweetsAdapter;
+	/** HomeTimeline fragment */
+	private HomeTimelineFragment homeTimelineFragment;
+	
+	/** Mentions fragment */
+	private MentionsFragment mentionsFragment;
 	
 	///////////////////////
 	/// Data fields
-	//////////////////////
-	
-	/**
-	 * List of TweetObject retrieved for Twitter API requests
-	 */
-	private ArrayList<Tweet> tweets;
-	
-	/**
-	 * Keep track of last tweet Id -- using for request more tweets since tweetTd:XXXXXX
-	 */
-	private long lastTweetId = -1;
-	
+	//////////////////////	
 	/**
 	 * Current session user on this app
 	 */
 	private User currentSessionUser;
 
-	/**
-	 * Flag to indicate whether first chunk of tweets data has been successfully loaded
-	 * before we can load more.
-	 */
-	private boolean isFirstDataLoaded = false;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_timeline);
-		setupViews();
+		setupCurrentSessionUserInfo();
 		
-		// Fetch initial tweets data
-		requestTweets( INITIAL_TWEETS_TO_LOAD, lastTweetId);
+		if ( savedInstanceState == null ) {
+			homeTimelineFragment= new HomeTimelineFragment();
+			mentionsFragment = new MentionsFragment();
+		}
+		
+		setupNavigationTabs();
+		
+		
 	}
 	
+	/**
+	 * Setup navigation tabs and set fragment to each tab.
+	 */
+	private void setupNavigationTabs() {
+		ActionBar actionBar = getActionBar();
+		actionBar.setNavigationMode( ActionBar.NAVIGATION_MODE_TABS );
+		actionBar.setDisplayShowTitleEnabled( true );
+		Tab tabHome = actionBar.newTab().setText("HOME").setTag( "HomeTimelineFragment" ).setIcon(R.drawable.ic_home)
+				.setTabListener( this );
+		Tab tabMention = actionBar.newTab().setText("Mentions").setTag( "MentionsFragment" ).setIcon( R.drawable.ic_mention )
+				.setTabListener( this );
+		
+		actionBar.addTab(tabHome);
+		actionBar.addTab(tabMention);
+		actionBar.selectTab( tabHome );
+	}
+
 	/**
 	 * Helper function to request a current session User information from Twitter API.
 	 */
@@ -96,7 +110,6 @@ public class TimelineActivity extends Activity {
 				@Override
 				public void onSuccess(JSONObject jsonObject ) {
 					currentSessionUser = User.fromJson( jsonObject );
-					startActivityForResult( getIntentForComposeActivity() , COMPOSE_REQUEST_CODE);	
 				}
 
 				@Override
@@ -110,130 +123,12 @@ public class TimelineActivity extends Activity {
 	}
 	
 	/**
-	 * Request tweets data from Twitter API
-	 * @param count			Number of tweets we'd like to retrieved
-	 * @param lastId		Which tweet Id (aka index) we fetch data from 
-	 */
-	private void requestTweets(int count, long lastId) {
-		
-		// Check if there is any internet connection, before sending request
-		if ( isNetworkAvailable() == false ) {
-			notifyOnToast("Error: No Internet Connection");
-			// Signify that refresh has finished
-			lvTweets.onRefreshComplete();
-			return;
-		}
-		
-		
-		// Setup handle Rest Client response
-		JsonHttpResponseHandler handler = new JsonHttpResponseHandler() {
-			@Override
-			public void onSuccess(JSONArray jsonTweets) {
-				tweets = Tweet.fromJson( jsonTweets );
-				// Retrieve data and bind to adapter
-				if ( tweetsAdapter == null ) {
-					// First time
-					tweetsAdapter = new TweetsAdapter( getBaseContext(), tweets);
-					lvTweets.setAdapter( tweetsAdapter );
-					isFirstDataLoaded = true;
-				} else {
-					
-					// NOTE: Due to "max_id" request, which results in returning ID less than (that is, older than) or equal to the specified ID,
-					//			we will always get a duplicate one (overlapped)
-					// More info: https://dev.twitter.com/docs/api/1.1/get/statuses/home_timeline
-					
-					// Remove the duplicate tweet (the first one we retrieved) 
-					Tweet firstDuplicateTweet = (tweets.size() > 0)? tweets.get( 0 ) : null;
-					boolean hasTheSameTweetId = false;
-					if ( firstDuplicateTweet != null ) {
-						hasTheSameTweetId = (firstDuplicateTweet.getId() == lastTweetId);
-						if ( hasTheSameTweetId == true) {
-							showLog( "remove duplicate " + firstDuplicateTweet.getId() + " last Id:" + lastTweetId + " with size " + tweets.size() );
-							tweets.remove( 0 );
-						}
-					}
-					
-					// Either there are more tweets data OR there is no duplicate id.
-					boolean hasNewTweets = (tweets.size() > 0 || hasTheSameTweetId == false);
-					
-					// Only update if new tweets are NOT overlapped.
-					if ( hasNewTweets == true ) {
-						notifyOnToast( tweets.size() + " more tweets ");
-						// Subsequent
-						tweetsAdapter.addAll( tweets );
-						tweetsAdapter.notifyDataSetChanged();
-					}
-				}
-				
-				// Prevent Index Out Of Bound
-				if ( tweets.size() > 0 ) {
-					lastTweetId = tweets.get( tweets.size() -1 ).getId();
-				}
-				
-				// Signify that refresh has finished
-				lvTweets.onRefreshComplete();
-				
-			}
-
-			@Override
-			public void onFailure(Throwable e, JSONObject errorObject) {				
-				notifyOnToast("Error: Rate limit exceeded!");
-			}
-		};
-		
-		// Prepare a request
-		
-		RequestParams request = new RequestParams("count", count);
-		
-		if ( lastId != -1 ) {
-			//since_id
-			request.put("max_id", Long.toString(lastId) );
-		}
-		
-		// Call to MyTwitterApp singleton
-		MyTwitterApp.getRestClient().getHomeTimeline( handler, request );	
-		
-	}
-	
-	/**
 	 * Helper function to display a toast message
 	 * @param msg		Message to display
 	 */
 	private void notifyOnToast(String msg) {
 		Toast.makeText( this, msg, Toast.LENGTH_SHORT).show();	
-	}
-	
-	/** Setup views */
-	private void setupViews() {
-		lvTweets = (PullToRefreshListView ) findViewById( R.id.lvTweets );	
-		
-		// Setup endless scrolling
-		lvTweets.setOnScrollListener( new EndlessScrollListener() {
-			
-			@Override
-			public void onLoadMore(int page, int totalItemsCount) {
-				
-				if ( isFirstDataLoaded == true ) {
-					showLog( "loading more " + page + ": Total Items Count:" + totalItemsCount);
-					requestTweets( TWEETS_TO_LOAD_WHEN_SCROLL , lastTweetId);
-				}
-			}
-		});
-		
-		// Setup pull-to-refresh
-		lvTweets.setOnRefreshListener(new OnRefreshListener() {
-			@Override
-			public void onRefresh() {
-				// Your code to refresh the list contents
-				// Make sure you call listView.onRefreshComplete()
-				// once the loading is done. This can be done from here or any
-				// place such as when the network request has completed successfully.
-				requestTweets( TWEETS_TO_LOAD_WHEN_SCROLL, lastTweetId);
-			}
-		});
-	}
-	
-	
+	}	
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -268,20 +163,7 @@ public class TimelineActivity extends Activity {
 	 * 
 	 */
 	private void openComposeActivity() {
-		// If currentSessionUser has already been loaded and temporarily stored
-		if ( currentSessionUser != null ) {
-			startActivityForResult( getIntentForComposeActivity() , COMPOSE_REQUEST_CODE);	
-		} else {
-			
-			// Check if there is any internet connection, before sending request
-			if ( isNetworkAvailable() == false ) {
-				notifyOnToast("Error: No Internet Connection");
-				return;
-			}
-			
-			// Otherwise, send a request for user information first
-			setupCurrentSessionUserInfo();
-		}
+		startActivityForResult( getIntentForComposeActivity() , COMPOSE_REQUEST_CODE);	
 	}
 	
 	/**
@@ -313,9 +195,8 @@ public class TimelineActivity extends Activity {
 						
 							@Override
 							public void onSuccess(JSONObject update) {
-								// Update view to reflect latest composed message.
-								tweetsAdapter.insert( Tweet.fromJson( update ), 0 );
-								tweetsAdapter.notifyDataSetChanged();
+								homeTimelineFragment.getAdapter().insert( Tweet.fromJson( update ), 0);
+								homeTimelineFragment.getAdapter().notifyDataSetChanged();
 								notifyOnToast( "Your status has been updated!");
 							}
 							
@@ -366,5 +247,50 @@ public class TimelineActivity extends Activity {
         NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
         return activeNetworkInfo != null && activeNetworkInfo.isConnected();
     }
+    
+    //////////////////////////////////////
+    /// OnTab Selected Listeners
+    /////////////////////////////////////
+
+	@Override
+	public void onTabSelected(Tab tab, FragmentTransaction ft) {
+		FragmentManager manager = getSupportFragmentManager();
+		
+		// use appropriate transaction for backward compatibility
+		android.support.v4.app.FragmentTransaction fts = manager.beginTransaction();
+		
+		if ( tab.getTag() == "HomeTimelineFragment") {
+			// Set Framelayout container and replace it with HomeTimelineFragment
+			fts.replace( R.id.frameContainer , homeTimelineFragment);
+		} else {
+			// Set Framelayout container and replace it with MentionsFragment
+			fts.replace( R.id.frameContainer , mentionsFragment );
+		}
+		
+		// commit and update changes to fragment
+		fts.commit();
+	}
+
+	@Override
+	public void onTabUnselected(Tab tab, FragmentTransaction ft) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onTabReselected(Tab tab, FragmentTransaction ft) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	////////////////////////////////////////////////
+	/// Listeners - listening event from fragments
+	////////////////////////////////////////////////
+	
+	// When we receive response event from fragment and we need to show this result to user
+	@Override
+	public void onResponseReceived(String message) {
+		notifyOnToast( message );
+	}
 
 }
